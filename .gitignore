@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+# work folders created when using the skill (logs, browser profile, OBS password)
+_recorder/
+*.mkv
+*.mp4

@@ -1,0 +1,4 @@
+# Python packages for browser-video-recorder (tested versions).
+# Install into the work folder's venv:  .venv\Scripts\python -m pip install -r requirements.txt
+obsws-python>=1.8.0,<2
+playwright>=1.64.0,<2
