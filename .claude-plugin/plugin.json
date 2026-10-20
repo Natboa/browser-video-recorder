@@ -1,6 +1,6 @@
 {
   "name": "browser-video-recorder",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Record videos playing in a web browser (lectures, course replays, webinars, meeting recordings) to MP4 for offline viewing, using OBS on Windows. Give it one course or playlist link and it lists the videos; files the site itself offers are downloaded, the rest recorded unattended overnight with keep-awake, stall recovery, end detection, quality checks and optional silence trimming.",
   "author": {
     "name": "Natboa",

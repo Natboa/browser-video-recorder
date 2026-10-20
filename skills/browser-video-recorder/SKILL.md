@@ -34,7 +34,7 @@ Game Bar or OBS by hand. Keep it that way:
   point to the official offline option (YouTube Premium downloads). Pages behind a "checking your
   browser" challenge (Cloudflare) are the same: the user may pass it themselves in `--login` mode,
   but never solve it for them. Tested sites (35+, including what fails) are listed in the
-  project README.
+  project's docs/compatibility.md.
 - Recordings are for the user's **personal offline use**. Mention once that the site's terms
   may forbid recording and that the risk is theirs — then help.
 

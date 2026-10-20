@@ -1,27 +1,60 @@
-# Browser Video Recorder: a Claude Code skill for recording browser videos for offline viewing
+# Browser Video Recorder
 
-**A Claude Code skill (Agent Skill) that records videos playing in your web browser to MP4 files,
-so you can watch them later without internet:** recorded lectures, online course replays, webinars,
-Zoom/Teams meeting recordings, training videos. It plays each video in its own Edge or Chrome
-window and records that window with **OBS Studio**, unattended and overnight, with keep-awake,
-stall recovery, end-of-video detection and quality checks. Afterwards it can **cut out long silent
-stretches** (exercise time, breaks).
+**A Claude Code skill that records videos playing in your web browser to MP4 files, so you can watch
+them offline.** Recorded lectures, course replays, webinars, meeting recordings, training videos.
+Give your agent one course link and it finds the videos, downloads what the site offers, and records
+the rest overnight with OBS Studio.
 
-Use it when a site lets you *watch* a video but has no download button. You ask your agent
-something like *"record these 6 lessons so I can watch them offline"* and wake up to checked MP4s.
-One link to a course outline, playlist or series page is enough: it lists the videos for you to
-confirm, **downloads the ones the site itself offers as files** (faster and better than recording),
-and records only the rest.
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D6)
+![Claude Code skill](https://img.shields.io/badge/Claude%20Code-skill%20%2B%20plugin-D97757)
+![Agent Skills](https://img.shields.io/badge/format-Agent%20Skills%20(SKILL.md)-555)
+[![Last commit](https://img.shields.io/github/last-commit/Natboa/browser-video-recorder)](https://github.com/Natboa/browser-video-recorder/commits/main)
 
 > Windows only · OBS Studio 28+ · Python 3.10+ · ffmpeg · Microsoft Edge or Google Chrome
 
----
+## Who is this for?
+
+- **Students** whose course site lets them *watch* lessons but has no download button.
+- **Anyone catching up on missed lectures or webinars** who wants to watch on a plane, a train, or with slow internet.
+- **People who archive** training videos or meeting recordings before access expires.
+
+If a site already offers a download button, the skill uses that. It records only what can't be downloaded.
+
+## Quick start
+
+1. **Install the skill into your agent** (once). In Claude Code:
+
+   ```
+   /plugin marketplace add Natboa/browser-video-recorder
+   /plugin install browser-video-recorder@browser-video-recorder
+   ```
+
+   No command line? Open Claude Code and paste this instead, and the agent installs it itself:
+
+   > *Install the Claude Code skill from https://github.com/Natboa/browser-video-recorder, then run its setup check.*
+
+2. **Restart Claude Code**, or open a new session. A running session doesn't pick up a newly installed skill.
+3. **Ask for your videos.** The agent first checks that OBS, Python and ffmpeg are installed (and asks before installing anything):
+
+   ```
+   /record-videos https://your-course-site.example/course
+   ```
+
+   or in plain words: *"Record these 6 lessons so I can watch them offline: …"*
+
+**Not installed yet?** The agent only knows about this skill after step 1. If you just say
+"record this video" to an agent that doesn't have it, it won't know what you mean. See
+[Install](#install) for other ways, including cloning the repo.
 
 ## Contents
 
-- [What you get](#what-you-get)
+- [Who is this for?](#who-is-this-for)
+- [Quick start](#quick-start)
 - [Install](#install)
+- [Requirements](#requirements)
 - [Use it](#use-it)
+- [What you get](#what-you-get)
 - [How it works](#how-it-works)
 - [Quality checks](#quality-checks)
 - [Trimming silences (optional)](#trimming-silences-optional)
@@ -30,47 +63,38 @@ and records only the rest.
 - [FAQ](#faq)
 - [Project layout](#project-layout)
 
-## What you get
-
-- **Unattended batch recording.** Give it a list of video pages; it records them one after
-  another in real time (a 3-hour lecture takes 3 hours), overnight if you like, and survives the
-  chat being closed.
-- **Clean recordings.** The video plays full screen in a dedicated browser window. OBS records only
-  that window and only that browser's sound, so notifications, other windows, other monitors,
-  your system volume and YouTube in your normal browser don't end up in the file.
-- **Silent nights, usable PC.** You can **mute your master volume** (the recording still gets full
-  sound, so nothing plays out loud overnight), and you can **open other programs on top of the
-  recording window**. The one thing to avoid is *minimising* it.
-- **Right shape, no extra black bars.** The recording takes the video's own shape and resolution
-  (up to 1080p), whatever your screen's shape: no bars on all four sides on 16:10, ultrawide or
-  portrait screens, or with old 4:3 films and vertical videos.
-- **Works on most sites.** It finds the main `<video>` on the page by itself, including inside
-  embedded players (iframes) and players that don't load until you press play. Sign in once in the
-  recorder's own browser profile and it stays signed in.
-- **No wasted nights.** Every run starts with a test clip that has to pass before hours of recording
-  begin. Each file is checked afterwards.
-- **Robust to real-world problems** found the hard way: buffering (recording pauses while the video
-  stalls, then reloads and resumes), players that stop a second before the end without saying so,
-  the screen turning off, laptops going to sleep, and USB audio devices dropping out.
-- **Optional silence trimming.** Copies with long silent stretches removed. Every bit of talking is
-  kept, with exact cut points (3 s after the last sound, 2 s before talking resumes, both
-  configurable). There's also a review video of short remarks inside silent blocks, so you can
-  decide whether they matter.
-
 ## Install
 
-### Option A: Claude Code plugin (recommended)
+"Installing" means making the skill's folder (`SKILL.md` and its scripts) available to your agent, so
+it knows the skill exists and can follow it. The skill is just files; nothing runs until you ask for videos.
 
-In Claude Code:
+### Option A: Claude Code plugin (recommended)
 
 ```
 /plugin marketplace add Natboa/browser-video-recorder
 /plugin install browser-video-recorder@browser-video-recorder
 ```
 
-### Option B: copy the skill folder
+The first line registers this GitHub repo as a source. The second downloads the skill from it.
+It stays available in all future sessions. To update later: `/plugin marketplace update browser-video-recorder`.
 
-Copy [`skills/browser-video-recorder`](skills/browser-video-recorder) to your personal skills folder:
+### Option B: from a local clone
+
+```powershell
+git clone https://github.com/Natboa/browser-video-recorder
+```
+
+Then in Claude Code, point the plugin system at the folder:
+
+```
+/plugin marketplace add C:\path\to\browser-video-recorder
+/plugin install browser-video-recorder@browser-video-recorder
+```
+
+### Option C: copy the skill folder only
+
+Copy [`skills/browser-video-recorder`](skills/browser-video-recorder) to your personal skills folder
+(this route doesn't include the `/record-videos` command):
 
 ```powershell
 git clone https://github.com/Natboa/browser-video-recorder
@@ -80,10 +104,11 @@ Copy-Item -Recurse browser-video-recorder\skills\browser-video-recorder "$env:US
 ### Other agents
 
 The skill follows the open [Agent Skills](https://agentskills.io/) format (`SKILL.md` + `scripts/` +
-`references/`), so agents that support Agent Skills can use the same folder. The scripts are
-plain Python and PowerShell.
+`references/`). For an agent that supports it, copy the same folder into that agent's skills directory.
+For one that doesn't, clone the repo, open the agent inside it, and tell it to read
+`skills/browser-video-recorder/SKILL.md` and follow it. The scripts are plain Python and PowerShell.
 
-### Requirements
+## Requirements
 
 Everything it needs. The agent checks these for you with
 [`check_setup.py`](skills/browser-video-recorder/scripts/check_setup.py) and asks before installing
@@ -111,13 +136,19 @@ monitor audio can drop out and freeze playback), **the laptop lid open** and **t
 
 ## Use it
 
-Just ask, for example:
+Once installed, use the slash command:
 
-> *"I have 6 recorded lessons on my course site, I want them offline. Here's the course page: …"*
->
-> *"Record this webinar replay tonight and cut out the long silences."*
->
-> *"Screen-record these 3 videos automatically while I sleep."*
+```
+/record-videos <link to a course, playlist or video page>
+```
+
+or just ask. The skill activates on phrases like:
+
+- "Record these lessons so I can watch them offline"
+- "Save this webinar replay, there is no download button"
+- "Screen-record these 3 videos automatically while I sleep"
+- "Record this course and cut out the long silences"
+- "I need this lecture without internet"
 
 The agent will:
 
@@ -137,6 +168,33 @@ The agent will:
 5. **Run unattended** (lid open, charger in), checking the first finished video before trusting the
    rest of the night.
 6. **Report** a table of every file (length vs expected, size, sound OK), then trim if you asked.
+
+## What you get
+
+- **Unattended batch recording.** Give it a list of video pages; it records them one after
+  another in real time (a 3-hour lecture takes 3 hours), overnight if you like, and survives the
+  chat being closed.
+- **Clean recordings.** The video plays full screen in a dedicated browser window. OBS records only
+  that window and only that browser's sound, so notifications, other windows, other monitors,
+  your system volume and YouTube in your normal browser don't end up in the file.
+- **Silent nights, usable PC.** You can **mute your master volume** (the recording still gets full
+  sound, so nothing plays out loud overnight), and you can **open other programs on top of the
+  recording window**. The one thing to avoid is *minimising* it.
+- **Right shape, no extra black bars.** The recording takes the video's own shape and resolution
+  (up to 1080p), whatever your screen's shape: no bars on all four sides on 16:10, ultrawide or
+  portrait screens, or with old 4:3 films and vertical videos.
+- **Works on most sites.** It finds the main `<video>` on the page by itself, including inside
+  embedded players (iframes) and players that don't load until you press play. Sign in once in the
+  recorder's own browser profile and it stays signed in.
+- **No wasted nights.** Every run starts with a test clip that has to pass before hours of recording
+  begin. Each file is checked afterwards.
+- **Robust to real-world problems** found the hard way: buffering (recording pauses while the video
+  stalls, then reloads and resumes), players that stop a second before the end without saying so,
+  the screen turning off, laptops going to sleep, and USB audio devices dropping out.
+- **Optional silence trimming.** Copies with long silent stretches removed. Every bit of talking is
+  kept, with exact cut points (3 s after the last sound, 2 s before talking resumes, both
+  configurable). There's also a review video of short remarks inside silent blocks, so you can
+  decide whether they matter.
 
 ## How it works
 
@@ -232,40 +290,7 @@ audio while your speakers stay silent.
 **My screen isn't 16:9 / the video is 4:3 or vertical. Will I get black bars?** No extra ones. The
 recorder crops to where the video actually is on screen and records in the video's own shape.
 
-**Which sites does it work on?** Anything that plays in an HTML5 `<video>` element without DRM or
-bot protection. Tested end-to-end (a test clip per site, checked by numbers *and* by looking at
-its frames), over 35 sites in October 2026:
-
-| Site / player | What made it tricky | Result |
-|---|---|---|
-| Zoom cloud-recording replays (course platform) | ~3 h lectures, overnight, player stops 1 s before the end | ✅ |
-| Vimeo (vimeo.com page) | streaming player that ignores direct jumps | ✅ |
-| Internet Archive (page and embedded) | video hidden inside a web component | ✅ |
-| Wikimedia Commons, Wikipedia | real player created only after a click | ✅ |
-| PeerTube (page and embedded) | peer-to-peer streaming, embed waits for its own play button | ✅ |
-| TED | starts muted, ads in a second video element, takes over full screen | ✅ |
-| NASA SVS, NASA+ | hidden gallery videos; NASA+ keeps its player in a hidden pop-up | ✅ |
-| HLS (hls.js), DASH (Shaka, dash.js 4K) | streams break if touched while they set up; 4K scaled to 1080p | ✅ |
-| Apple WWDC, Microsoft Learn, media.ccc.de, CERN lectures | conference/course talks; CERN's player is an iframe that needs a click | ✅ |
-| ESA, Dailymotion, Odysee, Bilibili, Twitch replays, Wistia (4K) | assorted players, a 2.5 h live-stream replay | ✅ |
-| Plyr / Video.js, Mux Player | captions turned off on request; 24-s video in a web component | ✅ |
-| NFB (4:3 film), ARD Mediathek (German), KAN 11 (Hebrew), Euronews (heavy ads), C-SPAN | "Watch now" button (`play_selector`), foreign-language pages, ad-heavy page | ✅ |
-| **YouTube** | stops playback in automated browsers after ~40 s | ❌ use YouTube Premium's download feature |
-| Library of Congress, Europeana | "checking your browser" wall that needs a person | ❌ unless you pass it yourself in the recorder's window |
-| Vimeo players embedded in real articles (Colossal) | lazy-loaded below the fold; Play button off-screen; `play()` first would jam it | ✅ |
-| OneDrive / SharePoint video player (a file opened in the browser) | signed-in work account; 3-hour file, jump to 30:00 | ✅ (for files you may download, the finder tells you to download instead) |
-| Dailymotion players embedded on other pages | refuses to play outside the sites its owner approved ("Forbidden") | ❌ open the video on dailymotion.com instead |
-| DW | its player never takes over from the browser's failed HLS attempt (stream itself is fine) | ❌ not solved |
-| Netflix-style DRM services | encrypted video records black | ❌ not supported, by design |
-
-The **one-link finder** was tested on Microsoft Learn shows, media.ccc.de conferences, TED playlists,
-Apple's video topics, Wistia series, Internet Archive collections, KAN series and YouTube playlists
-(listed and marked unsupported). On Vimeo channels the menu can outrank the videos: pick the right
-link group (`--group N`). Cloud storage folders (OneDrive etc.) are recognised and sent to download.
-
-Ads are never recorded as part of the video: the recorder follows the main video and pauses
-recording while it isn't playing. Set `expected_minutes` per video if a page could show a
-different video first (trailer, intro).
+**Which sites does it work on?** Anything that plays in an HTML5 `<video>` element without DRM or bot protection. Over 35 sites were tested end-to-end in October 2026: Vimeo, TED, Zoom replays, Internet Archive, PeerTube, Microsoft Learn, OneDrive/SharePoint and more. YouTube, DRM services and sites with a "checking your browser" wall don't work. Full table: [docs/compatibility.md](docs/compatibility.md).
 
 **Why OBS and not ffmpeg screen capture?** OBS captures one window (even when covered) plus that
 one app's audio, and its WebSocket API allows pausing exactly while the video buffers.
@@ -274,6 +299,9 @@ one app's audio, and its WebSocket API allows pausing exactly while the video bu
 
 ```
 .claude-plugin/              plugin + marketplace manifests (Claude Code /plugin install)
+commands/record-videos.md    the /record-videos slash command
+docs/compatibility.md        tested sites and what fails
+CHANGELOG.md                 release notes
 skills/browser-video-recorder/
 ├── SKILL.md                 workflow the agent follows (when to use, questions to ask, steps)
 ├── scripts/
