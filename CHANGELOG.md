@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- README cut to a short front page; detail moved to `docs/`.
+
 ## 1.1.0
 
 - Added the `/record-videos <link>` slash command.
