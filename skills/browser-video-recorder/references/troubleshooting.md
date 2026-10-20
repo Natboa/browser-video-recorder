@@ -60,9 +60,24 @@ Diagnose in the recorder's own browser profile.
 try again later." on YouTube).** → The site stops playback in automated browsers (bot protection):
 it plays what was already loaded, then refuses to send more. The recorder notices (player reset to
 0 with nothing loaded for 30 s), saves what it has and logs "the site's player reset itself".
+Verified 2026-10-20 with no interventions at all (no seeking, no play() calls, no full screen, fresh
+profile): the buffer grows to exactly 60 s and stops, the server refuses nothing, and at ~45 s the player
+errors - YouTube's own page code stops fetching for a browser that reports `navigator.webdriver = true`.
+The recorder's actions are not the cause; the only "fix" would be hiding the automation from the site.
 This is a real block, so stop there: **don't try to get around bot protection**. Tell the user what was
 recorded and that the site cut playback off, and point to its official offline option (YouTube:
 downloads with YouTube Premium). Try the site first; don't predict this from the site's name.
+
+**The test passes but the clip is an ad** (a 20-s "video" on a site whose videos are minutes long). →
+Pre-roll ads often play in the same `<video>` element as the real video, so the ad looks like the video.
+Three guards: with `expected_minutes` set (the finder fills it in from the list page), the recorder waits up
+to 3 min for a video of that length instead of starting on the ad; without it, it uses the length the page
+itself states for search engines (schema.org VideoObject / `video:duration` - YouTube, Vimeo, TED, Twitch,
+Internet Archive state it; Dailymotion and media.ccc.de don't) the same way, but goes on with a warning if
+that length never appears; and if a short video (2.5 min or less) "ends" and the same page (same address)
+goes on to a much longer one, the clip is thrown away and the real video is recorded. A long ad (seen: a
+293-s YouTube ad) on a page that states no length can still pass as the video. Autoplay of the next video changes the address, so it never triggers this.
+Always look at the contact sheet: seen with a YouTube pre-roll recorded and passed as the video.
 
 **A jump inside the video freezes it (position changes, nothing loads).** → Streaming players that
 manage their own buffer (YouTube, Vimeo, some HLS/DASH players) ignore direct `currentTime` jumps

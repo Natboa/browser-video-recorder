@@ -74,7 +74,8 @@ $rec = Recorded | Where-Object { $_.name -eq $testName } | Select-Object -Last 1
 if ($rec -and $rec.expected) { $expected = [double]$rec.expected }
 $check = & $py -I "$scripts\check_recording.py" $clip.FullName --expected $expected --test --sheet $sheet 2>&1
 $check | ForEach-Object { Say "  $_" }
-$stalls = $recLog -match "stalled|failed|Traceback|reset itself|could not resume"
+# "never showed up": the page states another length than what played (an ad?) - a test must not pass on that
+$stalls = $recLog -match "stalled|failed|Traceback|reset itself|could not resume|never showed up"
 if ($LASTEXITCODE -ne 0 -or $stalls) {
     if ($stalls) { Say "  recorder.log: $($stalls -join ' | ')" }
     Say "runner: TEST FAILED - not recording (see references/troubleshooting.md)"; Say "runner: done"; return

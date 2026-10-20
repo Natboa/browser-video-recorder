@@ -70,7 +70,7 @@ Ask these together (one message or a question tool), with sensible defaults:
 1. **Which videos?** Either one page URL per video (and a file name each, e.g. `03 - Prompt Engineering`),
    or **one link** to a page that lists them (course outline, playlist, channel, series, shared folder).
    For one link, run the finder (needs the work folder from step 2):
-   `python scripts/find_videos.py --config <work>ideos.json --url "<link>"` (add `--login` if the site
+   `python scripts/find_videos.py --config <work>\videos.json --url "<link>"` (add `--login` if the site
    needs an account: it opens the link, the user signs in and closes the window, then it searches).
    It prints the link groups it saw and checks the best group page by page: title, length, and
    whether each really has a video (or DRM, sign-in, bot check). **Show the list to the user

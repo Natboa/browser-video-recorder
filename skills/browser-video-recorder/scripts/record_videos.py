@@ -617,6 +617,53 @@ def fullscreen(page, frame):
         cdp.detach()
 
 
+# The page's own statement of the video's length, meant for search engines: schema.org VideoObject
+# (microdata or JSON-LD, ISO 8601 "PT3M46S") or the Open Graph video:duration tag (seconds). Used to
+# notice an ad or intro playing first when the config gives no expected length.
+PAGE_DURATION_JS = r"""() => {
+  const iso = s => { const m = /^P(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)$/i.exec((s || '').trim());
+    return m ? (+(m[1] || 0)) * 3600 + (+(m[2] || 0)) * 60 + (+(m[3] || 0)) : null; };
+  const md = document.querySelector('[itemprop=duration]');
+  if (md) { const v = iso(md.getAttribute('content') || md.getAttribute('datetime') || md.textContent); if (v) return v; }
+  for (const s of document.querySelectorAll('script[type="application/ld+json"]')) {
+    try { const walk = o => { if (!o || typeof o !== 'object') return null;
+        if (Array.isArray(o)) { for (const x of o) { const r = walk(x); if (r) return r; } return null; }
+        if (/VideoObject/i.test(String(o['@type'])) && o.duration) return iso(o.duration);
+        for (const k of Object.keys(o)) { const r = walk(o[k]); if (r) return r; } return null; };
+      const r = walk(JSON.parse(s.textContent)); if (r) return r; } catch (e) {} }
+  const og = document.querySelector('meta[property="video:duration"], meta[property="og:video:duration"]');
+  return og && +og.content > 0 ? +og.content : null; }"""
+
+
+def pick_all(page):
+    """Best video across all frames as PICK_JS ranks them, without clicking anything: (frame, info)."""
+    best = None
+    for fr in page.frames:
+        try:
+            info = fr.evaluate(PICK_JS)
+        except Exception:
+            continue
+        if info and (best is None or info["key"] > best[1]["key"]):
+            best = (fr, info)
+    return best
+
+
+def longer_video_after(page, short_s, url_before, wait_s=12):
+    """After a short video "ended": did the same page go on to a much longer video? Then the short one
+    was an ad or intro (YouTube pre-roll). Autoplay of the NEXT video changes the address, so a
+    changed URL never counts. Returns the long video's length or None."""
+    end = time.time() + wait_s
+    while time.time() < end:
+        time.sleep(2)
+        if page.url != url_before:
+            return None
+        nxt = pick_all(page)
+        if nxt and nxt[1]["rs"] >= 1 and nxt[1]["d"] and nxt[1]["d"] != float("inf") \
+                and nxt[1]["d"] > max(2 * short_s, short_s + 60):
+            return nxt[1]["d"]
+    return None
+
+
 def open_video(page, url, start_at=None, play_selector=None, expected_s=None):
     page.goto(url, wait_until="domcontentloaded", timeout=120_000)
     time.sleep(2)
@@ -633,10 +680,36 @@ def open_video(page, url, start_at=None, play_selector=None, expected_s=None):
         raise Unrecordable("this video uses encrypted media (DRM); it records as black frames - not recordable")
     if info["d"] == float("inf"):
         raise Unrecordable("this is a live stream (no fixed length); not supported")
-    # a trailer, an ad or a play_selector that pressed the wrong card can bring up a different video
+    # a different length than expected: often an ad or intro playing first (YouTube pre-rolls play in the
+    # same <video>) - let it play out and wait for the real one; still wrong after 3 min = wrong video
+    # (trailer, or a play_selector that pressed another item)
+    from_page = False
+    if not expected_s:  # no length in the config: take the page's own statement, if it has one
+        try:
+            stated = page.evaluate(PAGE_DURATION_JS)
+        except Exception:
+            stated = None
+        if stated and stated > 30 and abs(info["d"] - stated) > 0.1 * stated:
+            expected_s, from_page = stated, True
     if expected_s and abs(info["d"] - expected_s) > 0.1 * expected_s:
-        raise Unrecordable(f"found a {info['d'] / 60:.1f}-min video but expected about {expected_s / 60:.0f} min - "
-                           "probably the wrong video (trailer, ad, or play_selector pressed another item)")
+        log.info("a %.0f-s video plays first but %s about %.1f min (ad or intro?); waiting up to 3 min for it",
+                 info["d"], "the page says this one is" if from_page else "this one should be", expected_s / 60)
+        end = time.time() + 180
+        while time.time() < end:
+            time.sleep(3)
+            again = pick_all(page)
+            if again and again[1]["d"] and abs(again[1]["d"] - expected_s) <= 0.1 * expected_s:
+                frame, info = again
+                log.info("the expected video is here now (%.1f min)", info["d"] / 60)
+                break
+        else:
+            if from_page:  # page metadata can describe another video (a list page): go on, but say so
+                log.warning("the page's stated length (%.1f min) never showed up; recording the %.1f-min video "
+                            "that plays - look at the contact sheet", expected_s / 60, info["d"] / 60)
+            else:
+                raise Unrecordable(f"found a {info['d'] / 60:.1f}-min video but expected about "
+                                   f"{expected_s / 60:.0f} min - probably the wrong video (trailer, or "
+                                   "play_selector pressed another item)")
     frame.evaluate(f"""() => {{ const v = {VID}; v.muted = false; v.volume = 1; v.playbackRate = 1;
         {'' if start_at is None else f'v.currentTime = {start_at};'} const p = v.play(); if (p) p.catch(() => {{}}); }}""")
     time.sleep(1)
@@ -736,8 +809,10 @@ def finalize(mkv: Path, out_dir: Path, name: str, expect_s: float, work: Path):
     write_json(work / "recorded.json", rec)
 
 
-def record_one(page, rec, cfg, name, url, test_seconds=None, play_selector=None, expected_s=None):
+def record_one(page, rec, cfg, name, url, test_seconds=None, play_selector=None, expected_s=None, _ad_retry=False):
     cl = rec.cl
+    asked_test_s = test_seconds  # (test_seconds is cleared below for short videos)
+    ended_naturally = False
     frame = open_video(page, url, play_selector=play_selector, expected_s=expected_s)
     win = None
     for _ in range(30):
@@ -825,6 +900,7 @@ def record_one(page, rec, cfg, name, url, test_seconds=None, play_selector=None,
         if test_seconds and (last_t - first_t >= test_seconds or now - began >= test_seconds * 3):
             break
         if st and (st["ended"] or st["t"] >= st["d"] - 0.5):
+            ended_naturally = True
             break
         # the site's player threw playback away (position back to 0, nothing loaded) - e.g. YouTube shows
         # "Something went wrong" in automated browsers. Don't fight it: keep what we have and say so.
@@ -896,6 +972,7 @@ def record_one(page, rec, cfg, name, url, test_seconds=None, play_selector=None,
             # element (st is None), so judge by the last position seen
             if last_t >= duration_s - 5 and now - last_progress > 15:
                 log.info("playback stopped %.1f s before the end; treating as finished", duration_s - last_t)
+                ended_naturally = True
                 break
             if not paused:
                 cl.pause_record()
@@ -912,9 +989,25 @@ def record_one(page, rec, cfg, name, url, test_seconds=None, play_selector=None,
                     break
                 last_progress = time.time()
 
+    # a short "video" that ended and the same page then plays a much longer one: what we recorded was an
+    # ad or intro (seen: a 20-s YouTube pre-roll recorded and passed as the video). Throw that clip away
+    # and record the real video, once, now knowing its length.
+    real_s = None
+    if ended_naturally and not _ad_retry and duration_s <= 150:
+        real_s = longer_video_after(page, duration_s, page.url)
     if paused:
         cl.resume_record()
     out = Path(cl.stop_record().output_path)
+    if real_s:
+        log.warning("%s: the %.0f-s video was an ad or intro - the page went on to a %.1f-min video; discarding "
+                    "that clip and recording the real one", name, duration_s, real_s / 60)
+        for _ in range(15):  # OBS may still hold the file for a moment
+            try:
+                out.unlink(missing_ok=True)
+                break
+            except PermissionError:
+                time.sleep(1)
+        return record_one(page, rec, cfg, name, url, asked_test_s, play_selector, expected_s=real_s, _ad_retry=True)
     finalize(out, cfg["output_dir"], name, test_seconds * 0.97 if test_seconds else duration_s, cfg["work"])
 
 
