@@ -43,10 +43,6 @@ If a site already offers a download button, the skill uses that. It records only
 
    or in plain words: *"Record these 6 lessons so I can watch them offline: …"*
 
-**Not installed yet?** The agent only knows about this skill after step 1. If you just say
-"record this video" to an agent that doesn't have it, it won't know what you mean. See
-[Install](#install) for other ways, including cloning the repo.
-
 ## Contents
 
 - [Who is this for?](#who-is-this-for)
