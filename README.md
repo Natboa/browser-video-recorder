@@ -66,9 +66,9 @@ The agent checks all of it for you. Details and install commands: [docs/requirem
 
 ## Boundaries
 
-It records what you are already allowed to watch. Official downloads come first, DRM and bot
-protection are never bypassed (YouTube and Netflix-style services don't work), and recordings are for
-your own offline use. [More](docs/boundaries.md).
+It records what you are already allowed to watch. Official downloads come first, and every site is tried. It stops only if the site
+really blocks recording (DRM black frames, or playback cut off). DRM and bot protection are never
+bypassed, and recordings are for your own offline use. [More](docs/boundaries.md).
 
 ## More
 

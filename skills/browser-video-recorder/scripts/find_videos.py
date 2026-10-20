@@ -34,7 +34,6 @@ VIDEO_HOST = re.compile(
     r"teams\.microsoft\.com/.*recording|sharepoint\.com/.*stream|stream\.microsoft\.com|vidyard\.com/watch|brightcove",
     re.I)
 VIDEO_FILE = re.compile(r"\.(mp4|m4v|mov|mkv|webm|avi|wmv|mpe?g|ogv)(\?|$)", re.I)
-UNSUPPORTED = re.compile(r"youtube\.com|youtu\.be", re.I)  # resets playback in automated browsers
 ITEMISH = re.compile(r"lesson|lecture|episode|session|class|module|chapter|part\b|talk|recording|replay"
                      r"|week|day\b|unit|\b\d{1,3}\b|שיעור|פרק|הקלטה|מפגש|צפייה|הרצאה", re.I)
 WATCH_LINK = re.compile(r"recording|replay|watch|play video|view video|הקלט|צפ(י|ה)|לצפייה", re.I)
@@ -166,9 +165,6 @@ def video_on(page, wait_s=15):
 def probe(page, url, follow=True):
     """What is at url: {'status', 'minutes', 'title', 'record_url'}."""
     res = {"status": "", "minutes": None, "title": "", "record_url": url}
-    if UNSUPPORTED.search(url):
-        res["status"] = "YouTube - not supported (use YouTube Premium downloads)"
-        return res
     try:
         page.goto(url, wait_until="domcontentloaded", timeout=60_000)
     except Exception as e:
@@ -210,7 +206,7 @@ def probe(page, url, follow=True):
         res["status"] = "no video found"
     if not found and page.evaluate(SIGNIN_JS):
         res["status"] = "sign-in page - not signed in"
-    if res.get("download_url") and not res["status"].startswith(("encrypted", "sign-in", "YouTube")):
+    if res.get("download_url") and not res["status"].startswith(("encrypted", "sign-in")):
         res["status"] = "DOWNLOAD offered by the site; " + res["status"]
     return res
 
@@ -357,7 +353,7 @@ def find(cfg, url, group_index, max_items):
         groups = rank_groups(links, page.url)
         # players embedded right on this page (several lessons on one page)
         embeds = [{"url": fr.url, "text": "", "visible": True, "nav": False} for fr in page.frames[1:]
-                  if VIDEO_HOST.search(fr.url) and not UNSUPPORTED.search(fr.url)]
+                  if VIDEO_HOST.search(fr.url)]
         if len(embeds) >= 2:
             groups.insert(0, {"key": "players embedded on this page", "score": 999, "count": len(embeds),
                               "links": embeds})

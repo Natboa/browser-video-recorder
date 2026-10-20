@@ -17,7 +17,7 @@ audio while your speakers stay silent.
 **My screen isn't 16:9 / the video is 4:3 or vertical. Will I get black bars?** No extra ones. The
 recorder crops to where the video actually is on screen and records in the video's own shape.
 
-**Which sites does it work on?** Anything that plays in an HTML5 `<video>` element without DRM or bot protection. Over 35 sites were tested end-to-end in October 2026: Vimeo, TED, Zoom replays, Internet Archive, PeerTube, Microsoft Learn, OneDrive/SharePoint and more. YouTube, DRM services and sites with a "checking your browser" wall don't work. Full table: [compatibility.md](compatibility.md).
+**Which sites does it work on?** Every site is tried; it stops only if the site really blocks recording. Anything that plays in an HTML5 `<video>` element without DRM or bot protection works. Over 35 sites were tested end-to-end in October 2026: Vimeo, TED, Zoom replays, Internet Archive, PeerTube, Microsoft Learn, OneDrive/SharePoint and more. DRM services record black and sites with a "checking your browser" wall need you to pass it yourself; YouTube was cut off after ~40 s in testing. Full table: [compatibility.md](compatibility.md).
 
 **Why OBS and not ffmpeg screen capture?** OBS captures one window (even when covered) plus that
 one app's audio, and its WebSocket API allows pausing exactly while the video buffers.

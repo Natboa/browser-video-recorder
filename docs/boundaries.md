@@ -3,6 +3,8 @@
 This skill records what you are **already allowed to watch**, the same way you could with OBS or
 Xbox Game Bar by hand. It is built to stay that way:
 
+- **Every site is tried; it stops only on a real block.** A video is never skipped because of the
+  site it is on. If playback is cut off or the picture is DRM-black, it stops, keeps what it has and says so.
 - **Official downloads first, recording second.** If the site itself offers a video as a download
   (a Download button or link, a "download options" list), it is downloaded, with your signed-in
   session when the site requires one, exactly as clicking that link would. If the download is

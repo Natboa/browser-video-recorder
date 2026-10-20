@@ -60,8 +60,9 @@ Diagnose in the recorder's own browser profile.
 try again later." on YouTube).** → The site stops playback in automated browsers (bot protection):
 it plays what was already loaded, then refuses to send more. The recorder notices (player reset to
 0 with nothing loaded for 30 s), saves what it has and logs "the site's player reset itself".
-**Don't try to get around bot protection** - tell the user the site isn't supported and point to
-its official offline option (YouTube: downloads with YouTube Premium).
+This is a real block, so stop there: **don't try to get around bot protection**. Tell the user what was
+recorded and that the site cut playback off, and point to its official offline option (YouTube:
+downloads with YouTube Premium). Try the site first; don't predict this from the site's name.
 
 **A jump inside the video freezes it (position changes, nothing loads).** → Streaming players that
 manage their own buffer (YouTube, Vimeo, some HLS/DASH players) ignore direct `currentTime` jumps

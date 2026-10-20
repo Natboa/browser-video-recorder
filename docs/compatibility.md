@@ -18,7 +18,7 @@ its frames), over 35 sites in October 2026:
 | ESA, Dailymotion, Odysee, Bilibili, Twitch replays, Wistia (4K) | assorted players, a 2.5 h live-stream replay | ✅ |
 | Plyr / Video.js, Mux Player | captions turned off on request; 24-s video in a web component | ✅ |
 | NFB (4:3 film), ARD Mediathek (German), KAN 11 (Hebrew), Euronews (heavy ads), C-SPAN | "Watch now" button (`play_selector`), foreign-language pages, ad-heavy page | ✅ |
-| **YouTube** | stops playback in automated browsers after ~40 s | ❌ use YouTube Premium's download feature |
+| **YouTube** | in the October 2026 test the site cut playback off in the automated browser after ~40 s | ⚠️ tried like any site; stops and saves what it has if cut off (YouTube Premium downloads are the official route) |
 | Library of Congress, Europeana | "checking your browser" wall that needs a person | ❌ unless you pass it yourself in the recorder's window |
 | Vimeo players embedded in real articles (Colossal) | lazy-loaded below the fold; Play button off-screen; `play()` first would jam it | ✅ |
 | OneDrive / SharePoint video player (a file opened in the browser) | signed-in work account; 3-hour file, jump to 30:00 | ✅ (for files you may download, the finder tells you to download instead) |
@@ -27,8 +27,7 @@ its frames), over 35 sites in October 2026:
 | Netflix-style DRM services | encrypted video records black | ❌ not supported, by design |
 
 The **one-link finder** was tested on Microsoft Learn shows, media.ccc.de conferences, TED playlists,
-Apple's video topics, Wistia series, Internet Archive collections, KAN series and YouTube playlists
-(listed and marked unsupported). On Vimeo channels the menu can outrank the videos: pick the right
+Apple's video topics, Wistia series, Internet Archive collections, KAN series and YouTube playlists. On Vimeo channels the menu can outrank the videos: pick the right
 link group (`--group N`). Cloud storage folders (OneDrive etc.) are recognised and sent to download.
 
 Ads are never recorded as part of the video: the recorder follows the main video and pauses

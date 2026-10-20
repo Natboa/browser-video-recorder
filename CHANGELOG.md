@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.2
+
+- Every site is tried (YouTube included); the recorder and the skill stop only on a real block (DRM black frames, playback cut off), not by site name.
+
 ## 1.1.1
 
 - README cut to a short front page; detail moved to `docs/`.

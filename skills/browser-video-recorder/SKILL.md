@@ -26,15 +26,19 @@ Game Bar or OBS by hand. Keep it that way:
 - **Never pull a stream out of a player** — don't fetch a `<video>` src/stream URL, and don't get
   around a site that turned downloads off or its access checks. That is what recording by playing
   is for.
-- **DRM-protected video (Netflix-style) is out of scope.** It records as black frames by
-  design. The recorder refuses to start when the video uses encrypted media (EME), and the
-  test fails on black frames. Tell the user it can't be recorded; don't look for workarounds.
-- **Sites that block automated browsers are out of scope too.** YouTube, for example, stops playback
-  after ~40 s ("Something went wrong"). Don't try to get around bot protection; tell the user and
-  point to the official offline option (YouTube Premium downloads). Pages behind a "checking your
-  browser" challenge (Cloudflare) are the same: the user may pass it themselves in `--login` mode,
-  but never solve it for them. Tested sites (35+, including what fails) are listed in the
-  project's docs/compatibility.md.
+- **Try every site; stop only when it is actually blocked.** Never refuse or skip a video because of
+  which site it is (YouTube included): run the test clip and see. Stop, and tell the user, only when
+  a real block shows up:
+  - **DRM (Netflix-style):** the video records as black frames. The recorder refuses to start when it
+    sees encrypted media (EME), and the test fails on black frames.
+  - **The site cuts playback off in the automated browser** (for example "Something went wrong" after
+    ~40 s, or a "checking your browser" wall): the recorder notices the reset, saves what it has and
+    logs it. Report what was kept.
+  When a block happens, don't look for workarounds: don't get around DRM or bot protection, and never
+  solve a challenge for the user (they may pass it themselves in `--login` mode). Point to the site's
+  official offline option if it has one (e.g. YouTube Premium downloads). Tested sites, including
+  what failed, are in the project's docs/compatibility.md; it is a record of results, not a
+  list of sites to refuse.
 - Recordings are for the user's **personal offline use**. Mention once that the site's terms
   may forbid recording and that the risk is theirs — then help.
 
@@ -69,7 +73,7 @@ Ask these together (one message or a question tool), with sensible defaults:
    `python scripts/find_videos.py --config <work>ideos.json --url "<link>"` (add `--login` if the site
    needs an account: it opens the link, the user signs in and closes the window, then it searches).
    It prints the link groups it saw and checks the best group page by page: title, length, and
-   whether each really has a video (or DRM, sign-in, bot check, YouTube). **Show the list to the user
+   whether each really has a video (or DRM, sign-in, bot check). **Show the list to the user
    and let them confirm** — the grouping is a guess; if it picked the site's menu, rerun with
    `--group N`. Then `--add all` (every confirmed video) or `--add 1,3-5`. Lengths become
    `expected_minutes`, which guards against recording a trailer or the wrong item.
