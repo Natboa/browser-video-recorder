@@ -12,7 +12,7 @@
       "name": "browser-video-recorder",
       "source": "./",
       "description": "Record videos playing in a web browser to MP4 for offline viewing: finds every video from one course/playlist link, downloads what the site offers, records the rest in Edge/Chrome with OBS on Windows, unattended, with keep-awake, stall recovery, end detection, quality checks and optional silence trimming.",
-      "version": "1.1.4",
+      "version": "1.1.5",
       "category": "productivity",
       "keywords": [
         "video",

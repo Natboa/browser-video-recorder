@@ -159,9 +159,9 @@ def main():
     elif silent:
         notes.append(f"{len(silent)} silent {win // 60}-min window(s) - check the long-silence list below")
 
-    # picture: black frames mean DRM / minimised window / broken capture
+    # picture: black frames mean DRM / minimised window / broken capture (limited-range black is Y=16)
     br = brightness_samples(f, total, 6 if a.test else 16)
-    dark = sum(v < 16 for v in br)
+    dark = sum(v < 17 for v in br)
     if br and dark / len(br) > 0.8:
         problems.append(f"picture is black in {dark}/{len(br)} samples (DRM-protected video or minimised window)")
     else:

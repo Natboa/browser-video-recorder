@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.5
+
+- Black-picture check: pure black in TV-range video measures exactly 16, so the threshold is now
+  below 17 (was below 16), and a fully black (e.g. DRM) recording no longer passes.
+
 ## 1.1.4
 
 - Agent-neutral: the README presents it as an open Agent Skills skill for any agent (Claude Code, OpenAI
