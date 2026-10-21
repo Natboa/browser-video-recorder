@@ -5,14 +5,14 @@
     "url": "https://github.com/Natboa"
   },
   "metadata": {
-    "description": "Claude Code skill that records browser videos (lectures, course replays, webinars) to MP4 for offline viewing with OBS on Windows."
+    "description": "Agent skill (open Agent Skills standard) that records browser videos (lectures, course replays, webinars) to MP4 for offline viewing with OBS on Windows."
   },
   "plugins": [
     {
       "name": "browser-video-recorder",
       "source": "./",
       "description": "Record videos playing in a web browser to MP4 for offline viewing: finds every video from one course/playlist link, downloads what the site offers, records the rest in Edge/Chrome with OBS on Windows, unattended, with keep-awake, stall recovery, end detection, quality checks and optional silence trimming.",
-      "version": "1.1.3",
+      "version": "1.1.4",
       "category": "productivity",
       "keywords": [
         "video",

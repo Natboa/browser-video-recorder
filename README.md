@@ -1,12 +1,17 @@
 # Browser Video Recorder
 
-**A Claude Code skill that records videos playing in your browser to MP4, so you can watch them
-offline.** Lectures, course replays, webinars, meeting recordings. Give your agent one course link:
-it finds the videos, downloads what the site offers, and records the rest overnight with OBS Studio.
+![Browser Video Recorder banner](docs/banner.jpg)
+
+**An agent skill that records videos playing in your browser to MP4, so you can watch them
+offline.** Lectures, course replays, webinars, meeting recordings. Give your AI agent one course
+link: it finds the videos, downloads what the site offers, and records the rest overnight with OBS
+Studio. It follows the open [Agent Skills](https://agentskills.io/) standard, so it works with any
+agent that supports skills (for example Claude Code, OpenAI Codex, Gemini CLI, GitHub Copilot,
+Cursor), and with any agent that can read a file and run commands.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D6)
-![Claude Code skill](https://img.shields.io/badge/Claude%20Code-skill%20%2B%20plugin-D97757)
+[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-open%20standard-6E56CF)](https://agentskills.io/)
 [![Last commit](https://img.shields.io/github/last-commit/Natboa/browser-video-recorder)](https://github.com/Natboa/browser-video-recorder/commits/main)
 
 ## Who is it for?
@@ -17,23 +22,16 @@ download, the skill uses it and records only what can't be downloaded.
 
 ## Quick start
 
-1. **Install the skill** (once). In Claude Code:
+1. **Install the skill** (once). With any agent, paste this:
 
-   ```
-   /plugin marketplace add Natboa/browser-video-recorder
-   /plugin install browser-video-recorder@browser-video-recorder
-   ```
+   > *"Install the agent skill from https://github.com/Natboa/browser-video-recorder (the folder
+   > `skills/browser-video-recorder`) into your skills folder, then run its setup check."*
 
-   Or paste this to your agent: *"Install the Claude Code skill from
-   https://github.com/Natboa/browser-video-recorder, then run its setup check."*
-2. **Restart Claude Code** (a running session doesn't see a new skill).
-3. **Ask:**
-
-   ```
-   /record-videos https://your-course-site.example/course
-   ```
-
-   or in plain words: *"Record these 6 lessons so I can watch them offline."*
+   An agent without skills support can simply be told to clone the repo and follow
+   `skills/browser-video-recorder/SKILL.md`. Claude Code also has a one-step plugin install (below).
+2. **Start a new session** of your agent (a running one may not see a new skill).
+3. **Ask** in plain words: *"Record these 6 lessons so I can watch them offline:
+   https://your-course-site.example/course"*
 
 The agent checks your setup first and asks before installing anything.
 
@@ -42,14 +40,15 @@ The agent checks your setup first and asks before installing anything.
 "Installing" just makes the skill's folder (`SKILL.md` plus scripts) available to your agent. Nothing
 runs until you ask for videos.
 
-- **Plugin (recommended):** the two commands above. Update later with `/plugin marketplace update browser-video-recorder`.
-- **Local clone:** `git clone https://github.com/Natboa/browser-video-recorder`, then
-  `/plugin marketplace add C:\path\to\browser-video-recorder` and the same `/plugin install` line.
-- **Just the skill:** copy [`skills/browser-video-recorder`](skills/browser-video-recorder) into
-  `%USERPROFILE%\.claude\skills\` (no `/record-videos` command this way).
-- **Other agents:** it follows the open [Agent Skills](https://agentskills.io/) format. Copy the
-  same folder into that agent's skills directory, or open the agent in the cloned repo and tell it
-  to follow `skills/browser-video-recorder/SKILL.md`.
+- **Any agent with skills support:** copy the folder
+  [`skills/browser-video-recorder`](skills/browser-video-recorder) into that agent's skills folder
+  (see its documentation for where), or ask the agent to do it as in the quick start.
+- **Any other agent:** `git clone https://github.com/Natboa/browser-video-recorder`, open the agent in
+  that folder and tell it to follow `skills/browser-video-recorder/SKILL.md`.
+- **Claude Code (optional one-step plugin):** `/plugin marketplace add Natboa/browser-video-recorder`
+  then `/plugin install browser-video-recorder@browser-video-recorder`. This also adds a
+  `/record-videos` command. Update later with `/plugin marketplace update browser-video-recorder`.
+  (Or copy the skill folder into `%USERPROFILE%\.claude\skills\`.)
 
 ## Requirements
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.4
+
+- Agent-neutral: the README presents it as an open Agent Skills skill for any agent (Claude Code, OpenAI
+  Codex, Gemini CLI, GitHub Copilot, Cursor, ...), with install steps for any agent; the Claude Code plugin
+  stays as an optional one-step install.
+
 ## 1.1.3
 
 - Pre-roll ads are no longer recorded as the video: with a known length (from the finder, or the length the
