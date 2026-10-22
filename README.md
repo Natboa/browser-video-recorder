@@ -32,6 +32,8 @@ download, the skill uses it and records only what can't be downloaded.
 2. **Start a new session** of your agent (a running one may not see a new skill).
 3. **Ask** in plain words: *"Record these 6 lessons so I can watch them offline:
    https://your-course-site.example/course"*
+4. **Go to sleep:** leave the laptop **plugged in with the lid open**. You can **mute it** for a
+   quiet night; the recording still gets full sound.
 
 The agent checks your setup first and asks before installing anything.
 

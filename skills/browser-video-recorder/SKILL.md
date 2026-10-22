@@ -175,11 +175,22 @@ To try a new site or machine without starting the full run, add `-TestOnly` (kee
 
 ### 4. Run
 
-Tell the user: **lid open, charger in, sound output unchanged, don't minimise or click the
-recording window.** Also tell them what *is* fine, because people worry: other programs on top
-of the recording window, other monitors, YouTube in their normal browser, and **muting the master
-volume** for a silent night (capture is per-app, so the recording still gets full sound).
-Then launch detached so it survives the chat:
+**Always tell the user this before an unattended run** — right before launching, every time, in
+their language. People record overnight and a closed lid or a dead battery loses the whole night:
+
+> Everything is ready. Before you go to sleep:
+> - **Plug in the charger** and leave it plugged in.
+> - **Leave the lid open.** Closing it puts the laptop to sleep and stops the recording. The screen
+>   stays on (that's on purpose; playback stops if it turns off) - you can turn the brightness down.
+> - **You can mute the laptop** (mute key or volume to 0) for a quiet night. The recording still
+>   gets the full sound, because it records the browser's own audio, not the speakers.
+> - **Don't minimise or click the recording window, and don't change the sound output** (don't
+>   unplug headphones or switch devices). Other windows on top of it are fine.
+>
+> That's it - you can go to sleep. I'll check the first video when it finishes.
+
+If the laptop is on battery right now, say so first and wait until the charger is in. Then launch
+detached so it survives the chat:
 
 ```powershell
 Start-Process powershell -WindowStyle Hidden -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File "<skill>\scripts\run_session.ps1" -Config "<work>\videos.json"'
@@ -187,8 +198,9 @@ Start-Process powershell -WindowStyle Hidden -ArgumentList '-NoProfile -Executio
 
 The recorder holds a Windows power request (system + display) for its whole lifetime, so
 the laptop doesn't sleep and the screen doesn't turn off (playback stops when the display
-turns off). Lid close still sleeps the machine — that's why the lid must stay open. Warn if on
-battery.
+turns off). Lid close still sleeps the machine — that's why the lid must stay open. Check the power
+source (`(Get-CimInstance Win32_Battery).BatteryStatus`: 2 = on the charger, 1 = on battery, nothing = a
+desktop PC) and warn if on battery.
 
 Monitor with background waits on `<work>\recorder.log` (lines: `starting at`, `saved`,
 `stalled`, `failed`, `treating as finished`) and `<work>\runner.log` (`test passed`,

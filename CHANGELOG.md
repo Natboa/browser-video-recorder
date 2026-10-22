@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.6
+
+- Before every unattended run the agent now gives the user a fixed checklist: charger in, lid open,
+  the laptop may be muted (the recording still gets full sound), don't minimise the window or change
+  the sound output - then go to sleep. README quick start says the same.
+
 ## 1.1.5
 
 - Black-picture check: pure black in TV-range video measures exactly 16, so the threshold is now
