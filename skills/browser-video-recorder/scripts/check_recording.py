@@ -8,6 +8,9 @@ Checks: length vs expected (stalls / early stops), audio present and not silent 
 picture not black (DRM or minimised window), audio/video in sync, long digital silences
 (reported, usually from the source), and for trimmed files that each cut sits in quiet audio
 with talking right after.
+
+Exit codes: 0 pass, 1 failure, 2 inconclusive test with mixed sound/silence and no other
+failed checks. Code 2 requires a different sample, never permission to skip validation.
 """
 import argparse
 import re
@@ -121,6 +124,7 @@ def main():
     a = ap.parse_args()
     f = a.file
     problems, notes = [], []
+    retry_audio = False
     total = duration(f)
     print(f"{f.name}: {total / 60:.1f} min, {f.stat().st_size / 1e9:.2f} GB")
 
@@ -154,8 +158,15 @@ def main():
     for s, m in levels:
         print(f"   audio {hms(s)}-{hms(min(s + win, total))}: mean {m} dB")
     if silent and a.test:
-        problems.append(f"silent audio in {len(silent)} test window(s) - sound device dropped, wrong window, or "
-                        "a genuinely silent part of the video (re-test at another point if so)")
+        message = (f"silent audio in {len(silent)} test window(s) - sound device dropped, wrong window, or "
+                   "a genuinely silent part of the video")
+        # Mixed sound/silence is inconclusive, never a pass. A different sample
+        # must pass every check before the runner may record the full videos.
+        if len(silent) < len(levels) and all(m is not None for _, m in levels):
+            retry_audio = True
+            notes.append(message + "; another sample is required")
+        else:
+            problems.append(message)
     elif silent:
         notes.append(f"{len(silent)} silent {win // 60}-min window(s) - check the long-silence list below")
 
@@ -213,8 +224,9 @@ def main():
         print("  ok:", n)
     for p in problems:
         print("  PROBLEM:", p)
-    print("RESULT:", "PASS" if not problems else "FAIL")
-    sys.exit(1 if problems else 0)
+    code = 1 if problems else 2 if retry_audio else 0
+    print("RESULT:", {0: "PASS", 1: "FAIL", 2: "RETEST"}[code])
+    sys.exit(code)
 
 
 if __name__ == "__main__":

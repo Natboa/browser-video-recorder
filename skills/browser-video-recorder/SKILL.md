@@ -157,10 +157,18 @@ Optional: an NVIDIA GPU makes OBS use NVENC (lighter on the CPU); otherwise x264
 
 ### 3. Test first — every time a run starts
 
-Never start hours of recording without a passing test. `run_session.ps1` does this:
-it records a test clip from the first video, runs `check_recording.py --test` on it, and only
-continues if it passes. Test length defaults to the display-off timeout + 2 min, so the test
-proves the screen stays on and playback survives past it.
+Never start hours of recording without a passing test. `run_session.ps1` records a
+test clip from the first video, runs `check_recording.py --test` on it, and only
+continues if it passes. Test length defaults to the display-off timeout + 2 min, so
+the test proves the screen stays on and playback survives past it.
+
+If an otherwise healthy test contains both sound and silent windows, the runner keeps
+that clip and retries once at a different position with every check still enabled.
+It stops if the second sample does not pass. All-silent audio, black picture, sync
+errors and stalls fail immediately. Choose a known talking section explicitly with
+`-TestStartSeconds 600` (or `record_videos.py --test 720 --test-start 600`).
+The runner returns a nonzero exit code on a failed test, missing recording or failed
+finished-file check; callers must check that exit code rather than old log lines.
 
 The test checks: correct length (no stall), steady sound in every 2-minute slice, no black
 frames (DRM or broken capture), picture and sound in sync. On failure the run stops and
@@ -235,9 +243,14 @@ the original at one silent timestamp.
 
 - `python scripts/obs_websocket.py restore --work <work>` (OBS fully exited first) — puts the
   user's OBS remote-control setting back.
-- The recorder already switches OBS back to the user's own profile/scenes after each run, but leaves
-  OBS running in the tray. Ask the user to exit it (tray icon → right-click → Exit) when the session is
-  over; otherwise a Windows shutdown counts as an OBS crash and the next start shows the Safe Mode dialog.
+- After restoring the user's profile/scenes, the recorder requests a normal OBS exit
+  if it launched that OBS process itself. It first checks that recording, streaming,
+  replay buffer and virtual camera are idle, then waits up to 15 seconds for exit.
+  It never force-kills OBS. If OBS was already open, restoration failed, output state
+  is unknown, or a prompt blocks exit, it leaves OBS open and logs why. Ask the user
+  to exit it from the tray when finished; an unclean Windows shutdown can cause the
+  crash-recovery/Safe Mode dialog next time. This cleanup does not retrofit ownership
+  into an already-running recording process.
 - Turn your keep-awake off as the last step of any unattended run (chain it into the same job).
 - Ask whether to keep `<work>` (venv, browser profile with sign-ins, logs) for future videos.
 

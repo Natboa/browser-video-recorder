@@ -77,6 +77,12 @@ bypassed, and recordings are for your own offline use. [More](docs/boundaries.md
 [Trimming silences](docs/trimming-silences.md) · [FAQ](docs/faq.md) ·
 [Troubleshooting](skills/browser-video-recorder/references/troubleshooting.md) · [Changelog](CHANGELOG.md)
 
+## Development checks
+
+Run `python -m unittest discover -s tests -v` on Windows with ffmpeg/ffprobe installed.
+The suite generates small media fixtures and runs the session runner in temporary
+folders with capture doubles. It does not open a browser or connect to OBS.
+
 ## License
 
 [MIT](LICENSE)

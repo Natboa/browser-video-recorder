@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.1.7
+
+- The recorder now requests a normal OBS exit after restoring profile/scenes, only
+  when it launched that process and every output is idle. It waits for exit and
+  never force-kills a blocked process. Pre-existing OBS sessions remain open.
+- Cleanup also runs after setup errors; a failed profile restoration leaves OBS
+  open for recovery. Added ownership, active-output, shutdown-timeout and cleanup
+  ordering regressions without touching the live OBS process.
+
+- An otherwise healthy test with mixed sound/silence requests one new sample instead
+  of ending the night at a source exercise break. The retry must pass all checks;
+  all-silent audio, black picture, sync failures and stalls still stop the run.
+- Added `-TestStartSeconds` / `--test-start` for selecting a known talking section.
+- Failed tests, missing recordings and failed finished-file checks return a nonzero
+  runner exit code. OBS readiness now uses elapsed time instead of counting attempts,
+  and its diagnostics explain that Safe Mode disables remote control.
+- Added offline media and session-runner regression tests, plus troubleshooting for
+  sleep after failed-test cleanup and Windows log-file sharing errors.
+
 ## 1.1.6
 
 - Before every unattended run the agent now gives the user a fixed checklist: charger in, lid open,

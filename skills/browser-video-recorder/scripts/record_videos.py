@@ -14,6 +14,7 @@ Logs to <work>\\recorder.log; appends finished files to <work>\\recorded.json.
 import argparse
 import ctypes
 import json
+import math
 import logging
 import sys
 import time
@@ -21,7 +22,7 @@ from ctypes import wintypes
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import BROWSER_EXE, duration, load_config, obs_client, read_json, remux_to_mp4, write_json  # noqa: E402
+from common import BROWSER_EXE, close_owned_obs, duration, load_config, obs_client, read_json, remux_to_mp4, write_json  # noqa: E402
 from keep_awake import KeepAwake  # noqa: E402
 
 MARK = "BVRREC"  # pinned window title so OBS always finds the window
@@ -324,8 +325,10 @@ class Recorder:
             self.switch_collection(self.orig["collection"])
             self.switch_profile(self.orig["profile"])
             log.info("OBS switched back to profile %r / scenes %r", self.orig["profile"], self.orig["collection"])
+            return True
         except Exception as e:
             log.warning("could not restore OBS settings: %s", e)
+            return False
 
 
 # ---------- browser ----------
@@ -809,7 +812,8 @@ def finalize(mkv: Path, out_dir: Path, name: str, expect_s: float, work: Path):
     write_json(work / "recorded.json", rec)
 
 
-def record_one(page, rec, cfg, name, url, test_seconds=None, play_selector=None, expected_s=None, _ad_retry=False):
+def record_one(page, rec, cfg, name, url, test_seconds=None, play_selector=None, expected_s=None, _ad_retry=False,
+               test_start=None):
     cl = rec.cl
     asked_test_s = test_seconds  # (test_seconds is cleared below for short videos)
     ended_naturally = False
@@ -839,6 +843,10 @@ def record_one(page, rec, cfg, name, url, test_seconds=None, play_selector=None,
     elif test_seconds:  # test from the middle of the video when it is long enough
         test_whole = False
         start = 1800.0 if duration_s > 1800 + test_seconds + 60 else max(0.0, (duration_s - test_seconds) / 2)
+        if test_start is not None:
+            if test_start + test_seconds > duration_s:
+                raise ValueError("--test-start leaves too little video for the requested test length")
+            start = test_start
         frame, ok = jump(page, frame, url, start, play_selector)
         if not ok:
             log.warning("this player doesn't follow jumps inside the video; testing from the start instead")
@@ -1007,7 +1015,8 @@ def record_one(page, rec, cfg, name, url, test_seconds=None, play_selector=None,
                 break
             except PermissionError:
                 time.sleep(1)
-        return record_one(page, rec, cfg, name, url, asked_test_s, play_selector, expected_s=real_s, _ad_retry=True)
+        return record_one(page, rec, cfg, name, url, asked_test_s, play_selector, expected_s=real_s,
+                          _ad_retry=True, test_start=test_start)
     finalize(out, cfg["output_dir"], name, test_seconds * 0.97 if test_seconds else duration_s, cfg["work"])
 
 
@@ -1015,9 +1024,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
     ap.add_argument("--test", type=int, metavar="SECONDS", help="record a test clip of the first video")
+    ap.add_argument("--test-start", type=float, metavar="SECONDS", help="source position for a test clip")
     ap.add_argument("--only", nargs="*", help="file names (or name prefixes) to record")
     ap.add_argument("--login", action="store_true", help="open the browser profile so the user can sign in")
     args = ap.parse_args()
+    if args.test_start is not None and (not args.test or not math.isfinite(args.test_start) or args.test_start < 0):
+        ap.error("--test-start requires --test and a finite, non-negative position")
     cfg = load_config(args.config)
     cfg["output_dir"].mkdir(parents=True, exist_ok=True)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s",
@@ -1050,9 +1062,11 @@ def main():
     if not todo:
         return
 
-    rec = Recorder(obs_client(cfg["work"], start_if_needed=True, log=log.info), cfg)
-    rec.setup()
+    client = obs_client(cfg["work"], start_if_needed=True, log=log.info)
+    rec = None
     try:
+        rec = Recorder(client, cfg)
+        rec.setup()
         with KeepAwake("Recording browser video"), sync_playwright() as p:
             log.info("holding display + system awake")
             ctx = launch(p, cfg)
@@ -1060,7 +1074,7 @@ def main():
             page = ctx.pages[0] if ctx.pages else ctx.new_page()
             for name, url, selector, expected_s in todo:
                 try:
-                    record_one(page, rec, cfg, name, url, args.test, selector, expected_s)
+                    record_one(page, rec, cfg, name, url, args.test, selector, expected_s, test_start=args.test_start)
                 except Unrecordable as e:
                     log.error("%s: NOT RECORDABLE - %s", name, e)
                     if rec.cl.get_record_status().output_active:
@@ -1071,7 +1085,8 @@ def main():
                         rec.cl.stop_record()
             ctx.close()
     finally:
-        rec.restore()
+        if rec is None or rec.restore():
+            close_owned_obs(client, getattr(client, 'recorder_owned_process', None), log=log.info)
     log.info("done")
 
 

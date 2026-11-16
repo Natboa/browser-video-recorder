@@ -4,6 +4,29 @@ Each entry: what you see → why → what to do. Most of these cost hours the fi
 
 ## Playback
 
+**Test stops halfway through an exercise or break.** The default long-video test starts
+at 30:00. A lecture can transition from talking into a silent exercise during that
+sample. Mixed sound/silence with otherwise healthy capture is now `RESULT: RETEST`
+(checker exit code 2). The runner preserves the clip and retries once near the start,
+with the same test length and strict checks. A second inconclusive result stops the
+run. Entirely silent audio or any picture/sync/stall failure still stops immediately.
+To choose a known talking section, use `run_session.ps1 -Config ... -TestStartSeconds 600`.
+Silence alone does not prove whether the source or capture went quiet: compare the
+same source timestamp and the saved picture before diagnosing a hardware failure.
+
+**Screen went dark after a failed test.** Check timestamps. The recorder releases its
+display/system power requests when it exits; a wrapper may also release its keep-awake
+hold. Normal sleep after that cleanup is not evidence of sleep during capture. Keep
+the holds for active work, and release them on stop/end. Do not disable cleanup to
+hide a test failure.
+
+**A wrapper says success after `TEST FAILED`, or rejects an older failed test.** The
+runner now exits nonzero on failures. Check the process exit code and the current
+attempt's result, not every historical `FAIL` in an appended log. Keep status logging
+separate from subprocess output: redirecting a long-running child into the same file
+that the parent appends to can cause a sharing violation on Windows. Retry transient
+status-log writes if another process is reading them.
+
 **Player stuck at the start time (e.g. 30:00), says "playing", timer doesn't move; or video
 runs but no sound.** → The browser can't open the Windows default sound device, and video
 timing follows the audio clock. Typical after a USB DAC / Bluetooth / monitor-audio device
@@ -177,6 +200,16 @@ a file OBS has open. Copy it and probe with ffmpeg, or ask OBS `GetRecordStatus`
 conclude the run is stuck from `dir` alone.
 
 ## Environment
+
+**OBS remains open after a recorder run.** The recorder closes only an OBS process
+it launched itself, after restoring profile/scenes and verifying all outputs are
+idle. A pre-existing OBS instance, active recording/stream/replay buffer/virtual
+camera, failed restoration, unknown output state or a blocked close request leaves
+it open with a log message. Check for a prompt and exit manually when finished.
+Normal close uses Windows `WM_CLOSE`, including for the hidden tray window, then
+waits for the original process handle to exit; it never escalates to a forced kill.
+An older recorder process already in progress cannot acquire this cleanup behavior
+from a source edit while it is running.
 
 **`ImportError: DLL load failed ... The filename or extension is too long`** (greenlet /
 Playwright). → The venv lives under a very long path (app sandbox, temp folders). Put the

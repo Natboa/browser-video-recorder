@@ -102,6 +102,89 @@ def obs_running():
                                text=True).stdout.count("obs64.exe"))
 
 
+def request_obs_close(pid):
+    """Post WM_CLOSE to exactly one OBS main window, including a hidden tray window.
+
+    OBS handles its own save/flush/quit path. Never post WM_QUIT, destroy windows,
+    or terminate the process. The caller must own the process and verify it is idle.
+    """
+    import ctypes
+    from ctypes import wintypes
+
+    user = ctypes.WinDLL('user32', use_last_error=True)
+    callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    user.EnumWindows.argtypes = [callback_type, wintypes.LPARAM]
+    user.EnumWindows.restype = wintypes.BOOL
+    user.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+    user.GetWindowThreadProcessId.restype = wintypes.DWORD
+    user.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+    user.GetWindowTextW.restype = ctypes.c_int
+    user.GetClassNameW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+    user.GetClassNameW.restype = ctypes.c_int
+    user.GetWindow.argtypes = [wintypes.HWND, wintypes.UINT]
+    user.GetWindow.restype = wintypes.HWND
+    user.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    user.PostMessageW.restype = wintypes.BOOL
+    windows = []
+
+    @callback_type
+    def visit(hwnd, _):
+        owner_pid = wintypes.DWORD()
+        user.GetWindowThreadProcessId(hwnd, ctypes.byref(owner_pid))
+        if owner_pid.value == pid and not user.GetWindow(hwnd, 4):  # GW_OWNER
+            title, cls = ctypes.create_unicode_buffer(1024), ctypes.create_unicode_buffer(256)
+            user.GetWindowTextW(hwnd, title, len(title))
+            user.GetClassNameW(hwnd, cls, len(cls))
+            if re.match(r'^OBS \d', title.value) and cls.value.startswith('Qt'):
+                windows.append(hwnd)
+        return True
+
+    if not user.EnumWindows(visit, 0) or len(windows) != 1:
+        return False
+    owner_pid = wintypes.DWORD()
+    user.GetWindowThreadProcessId(windows[0], ctypes.byref(owner_pid))
+    return owner_pid.value == pid and bool(user.PostMessageW(windows[0], 0x0010, 0, 0))  # WM_CLOSE
+
+
+def close_owned_obs(client, process, timeout=15, log=print):
+    """Close only the OBS process this recorder launched, and only when idle.
+
+    The Popen handle, not a saved PID, preserves process identity. Refuse to close
+    on unknown/active outputs and never force a timed-out shutdown.
+    """
+    if process is None:
+        log('OBS was already running; leaving it open')
+        return False
+    exit_code = process.poll()
+    if exit_code is not None:
+        return exit_code == 0
+    try:
+        for name, status in (
+            ('recording', client.get_record_status), ('streaming', client.get_stream_status),
+            ('replay buffer', client.get_replay_buffer_status), ('virtual camera', client.get_virtual_cam_status),
+        ):
+            if status().output_active:
+                log(f'OBS still has active {name}; leaving it open')
+                return False
+        # Check the original process handle again after the WebSocket queries.
+        exit_code = process.poll()
+        if exit_code is not None:
+            return exit_code == 0
+        if not request_obs_close(process.pid):
+            log('Could not request normal OBS exit; leaving it open')
+            return False
+        if process.wait(timeout=timeout) != 0:
+            log('OBS exited with an error; normal shutdown could not be confirmed')
+            return False
+        log('OBS exited normally')
+        return True
+    except subprocess.TimeoutExpired:
+        log('OBS is still running after the close request; exit it manually (no forced termination)')
+    except Exception as error:
+        log(f'Could not confirm idle OBS or complete normal shutdown; leaving it open: {error}')
+    return False
+
+
 # ---------- OBS WebSocket ----------
 
 def obs_client(work, start_if_needed=False, wait_s=300, log=print):
@@ -113,18 +196,27 @@ def obs_client(work, start_if_needed=False, wait_s=300, log=print):
     if not pw_file.exists():
         raise SystemExit("OBS remote control is not enabled for this work folder; run obs_websocket.py enable")
     pw = pw_file.read_text().strip()
+    owned_process = None
     if start_if_needed and not obs_running():
         log("starting OBS")
-        subprocess.Popen([str(OBS_EXE), "--minimize-to-tray", "--disable-shutdown-check", "--disable-updater"],
-                         cwd=OBS_EXE.parent)
+        owned_process = subprocess.Popen([str(OBS_EXE), "--minimize-to-tray", "--disable-updater"],
+                                         cwd=OBS_EXE.parent)
     cl = None
-    for i in range(wait_s):
+    deadline = time.monotonic() + wait_s
+    next_notice = time.monotonic() + 30
+    while time.monotonic() < deadline:
         try:
-            cl = cl or obs.ReqClient(host="localhost", port=4455, password=pw, timeout=15)
+            remaining = deadline - time.monotonic()
+            cl = cl or obs.ReqClient(host="localhost", port=4455, password=pw, timeout=min(15, remaining))
             cl.get_profile_list()  # fails with code 207 while OBS is starting or a dialog is open
+            cl.recorder_owned_process = owned_process
             return cl
         except Exception:
-            if i % 30 == 0 and i:
-                log("waiting for OBS to be ready (if OBS shows a crash dialog, choose Run in Normal Mode)")
-            time.sleep(1)
-    raise SystemExit("OBS did not become ready")
+            now = time.monotonic()
+            if now >= next_notice:
+                log("waiting for OBS remote control: choose Run in Normal Mode in a crash dialog; "
+                    "if OBS opened in Safe Mode, fully exit and reopen normally (Safe Mode disables obs-websocket)")
+                next_notice = now + 30
+            time.sleep(max(0, min(1, deadline - now)))
+    raise SystemExit("OBS remote control did not become ready within the timeout; check Normal Mode "
+                     "and that WebSocket remote control is enabled")

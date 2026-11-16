@@ -18,6 +18,15 @@ Why some things are done the way they are:
   the last second all night.
 - **Display-required power request.** Browsers stop playing when the screen turns off. `SetThreadExecutionState`
   is ignored on Modern Standby laptops, so the skill uses `PowerCreateRequest`.
+- **Normal OBS shutdown for recorder-owned processes.** After restoring profile/scenes,
+  the recorder checks recording, streaming, replay buffer and virtual camera status.
+  It posts `WM_CLOSE` to the main window of the exact OBS process it launched and
+  waits up to 15 seconds for exit. Existing OBS instances and uncertain/active outputs
+  are left open. A close prompt or timeout is reported; there is no force-kill fallback.
+  The original process handle prevents a reused PID from targeting another instance.
+
+  References: [Windows close messages](https://learn.microsoft.com/windows/win32/learnwin32/closing-the-window)
+  and [OBS 32.2.2 closeEvent](https://github.com/obsproject/obs-studio/blob/32.2.2/frontend/widgets/OBSBasic.cpp#L1714).
 - **Separate browser profile with sandbox on and occlusion throttling off.** Playback keeps
   rendering when covered by other windows, and no "unsupported flag" warning bar appears in the video.
 
